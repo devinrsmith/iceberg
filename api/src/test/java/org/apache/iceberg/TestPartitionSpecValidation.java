@@ -332,6 +332,40 @@ public class TestPartitionSpecValidation {
         .hasMessage(expectedErrorMessage);
   }
 
+  @Test
+  void testPartitionFieldInStruct() {
+    final Schema schema =
+        new Schema(
+            NestedField.required(SCHEMA.highestFieldId() + 1, "MyStruct", SCHEMA.asStruct()));
+    // This works, as expected
+    PartitionSpec.builderFor(schema).identity("MyStruct.id").build();
+  }
+
+  @Test
+  void testPartitionFieldInList() {
+    final Schema schema =
+        new Schema(
+            NestedField.required(
+                2, "MyList", Types.ListType.ofRequired(1, Types.IntegerType.get())));
+    // Does not currently fail, but ideally should
+    PartitionSpec.builderFor(schema).identity("MyList.element").build();
+    // Would also want to test more nesting, ie MyList.element.foo
+  }
+
+  @Test
+  void testPartitionFieldInMap() {
+    final Schema schema =
+        new Schema(
+            NestedField.required(
+                3,
+                "MyMap",
+                Types.MapType.ofRequired(1, 2, Types.IntegerType.get(), Types.IntegerType.get())));
+    // Does not currently fail, but ideally should
+    PartitionSpec.builderFor(schema).identity("MyMap.key").build();
+    PartitionSpec.builderFor(schema).identity("MyMap.value").build();
+    // Would also want to test more nesting, ie MyMap.key.foo
+  }
+
   private static Object[][] unsupportedFieldsProvider() {
     return new Object[][] {
       {7, "variant_partition1", "Cannot partition by non-primitive source field: variant"},
